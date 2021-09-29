@@ -7,10 +7,10 @@ import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SelectionMenuEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.hardwarelounge.gallium.DiscordBot;
 import net.hardwarelounge.gallium.command.InfoCommand;
 import net.hardwarelounge.gallium.command.SlashCommand;
+import net.hardwarelounge.gallium.command.TicketCommand;
 import net.hardwarelounge.gallium.util.CommandFailedException;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,6 +27,7 @@ public class SlashCommandListener extends ListenerAdapter {
      * {@link net.dv8tion.jda.api.interactions.components.selections.SelectionMenu}
      */
     public static final String INTERACTION_ID_DELIMITER = "∆";
+    public static final String COMMAND_DATA_PREFIX = "command-data";
     public static final String BUTTON_PREFIX = "button";
     public static final String SELECT_MENU_PREFIX = "select";
 
@@ -39,10 +40,8 @@ public class SlashCommandListener extends ListenerAdapter {
 
         // Register all slash-commands
         registerCommands(parent.getJda(),
-                new InfoCommand(parent, "command-info")
-                // new CommandImpl(),
-                // new CommandImpl(),
-                // new CommandImpl(),
+                new InfoCommand(parent, "info"),
+                new TicketCommand(parent, "ticket")
         );
     }
 
@@ -90,7 +89,13 @@ public class SlashCommandListener extends ListenerAdapter {
 
     @Override
     public void onSelectionMenu(@NotNull SelectionMenuEvent event) {
-        String[] split = event.getComponentId().split(INTERACTION_ID_DELIMITER);
+        if (!event.getComponentId().startsWith(COMMAND_DATA_PREFIX)) {
+            return;
+        }
+
+        String componentId = event.getComponentId().replaceFirst(COMMAND_DATA_PREFIX, "");
+
+        String[] split = componentId.split(INTERACTION_ID_DELIMITER);
 
         if (split.length != 4 || !split[0].equalsIgnoreCase(SELECT_MENU_PREFIX)) {
             event.reply("Ein interner Fehler ist aufgetreten").setEphemeral(true).queue();
@@ -111,7 +116,13 @@ public class SlashCommandListener extends ListenerAdapter {
 
     @Override
     public void onButtonClick(@NotNull ButtonClickEvent event) {
-        String[] split = event.getComponentId().split(INTERACTION_ID_DELIMITER);
+        if (!event.getComponentId().startsWith(COMMAND_DATA_PREFIX)) {
+            return;
+        }
+
+        String componentId = event.getComponentId().replaceFirst(COMMAND_DATA_PREFIX, "");
+
+        String[] split = componentId.split(INTERACTION_ID_DELIMITER);
 
         if (split.length != 4 || !split[0].equalsIgnoreCase(BUTTON_PREFIX)) {
             event.reply("Ein interner Fehler ist aufgetreten").setEphemeral(true).queue();

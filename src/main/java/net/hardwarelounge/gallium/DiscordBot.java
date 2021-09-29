@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.hardwarelounge.gallium.config.GalliumConfig;
 import net.hardwarelounge.gallium.database.DatabaseManager;
@@ -18,6 +19,7 @@ import org.hibernate.Session;
 import javax.security.auth.login.LoginException;
 import java.util.Arrays;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class DiscordBot {
 
@@ -75,6 +77,21 @@ public class DiscordBot {
         sessionConsumer.accept(session);
         session.getTransaction().commit();
         session.close();
+    }
+
+    public <T> T using(Function<Session, T> sessionConsumer) {
+        Session session = databaseManager.getSessionFactory().openSession();
+        session.beginTransaction();
+        T returnValue = sessionConsumer.apply(session);
+        session.getTransaction().commit();
+        session.close();
+        return returnValue;
+    }
+
+    public void addEventListener(ListenerAdapter... eventListener) {
+        for (ListenerAdapter listenerAdapter : eventListener) {
+            jda.addEventListener(listenerAdapter);
+        }
     }
 
 }

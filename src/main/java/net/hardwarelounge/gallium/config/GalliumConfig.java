@@ -15,6 +15,7 @@ public class GalliumConfig {
     private String ticketChannelId;
     private String ticketCategoryId;
     private String ticketLogChannelId;
+    private int maxTicketsPerUser;
 
     private String database;
     private String databaseHost;

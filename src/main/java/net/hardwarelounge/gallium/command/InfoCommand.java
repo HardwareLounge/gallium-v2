@@ -46,7 +46,8 @@ public class InfoCommand extends SlashCommand {
                     builder.addField("Server beigetreten", member.getTimeJoined().toString(), false)
                             .addField("Server ge-boosted", member.getTimeBoosted() != null ?
                                     member.getTimeBoosted().toString() : "kein Server-Booster", false)
-                            .addField("Nickname", member.getNickname(), false);
+                            .addField("Nickname", member.getNickname() != null ?
+                                    member.getNickname() : "`null`", false);
                 }
 
                 event.reply("").addEmbeds(builder.build()).queue();

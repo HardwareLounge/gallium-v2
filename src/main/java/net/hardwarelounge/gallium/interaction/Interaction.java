@@ -19,13 +19,15 @@ public abstract class Interaction {
     public abstract void handleSelectionMenu(SelectionMenuEvent event, String data);
 
     public final synchronized String createButtonId(String data) {
-        return SlashCommandListener.BUTTON_PREFIX + SlashCommandListener.INTERACTION_ID_DELIMITER
+        return SlashCommandListener.COMMAND_DATA_PREFIX
+                + SlashCommandListener.BUTTON_PREFIX + SlashCommandListener.INTERACTION_ID_DELIMITER
                 + uniqueName + SlashCommandListener.INTERACTION_ID_DELIMITER + data
                 + SlashCommandListener.INTERACTION_ID_DELIMITER + (++counter);
     }
 
     public final synchronized String createSelectMenuId(String data) {
-        return SlashCommandListener.SELECT_MENU_PREFIX + SlashCommandListener.INTERACTION_ID_DELIMITER
+        return SlashCommandListener.COMMAND_DATA_PREFIX
+                + SlashCommandListener.SELECT_MENU_PREFIX + SlashCommandListener.INTERACTION_ID_DELIMITER
                 + uniqueName + SlashCommandListener.INTERACTION_ID_DELIMITER + data
                 + SlashCommandListener.INTERACTION_ID_DELIMITER + (++counter);
     }
