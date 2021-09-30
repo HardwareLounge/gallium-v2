@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.hardwarelounge.gallium.config.GalliumConfig;
+import net.hardwarelounge.gallium.config.PermissionConfig;
 import net.hardwarelounge.gallium.database.DatabaseManager;
 import net.hardwarelounge.gallium.listener.SlashCommandListener;
 import net.hardwarelounge.gallium.ticket.TicketManager;
@@ -26,6 +27,7 @@ public class DiscordBot {
     private static final Logger LOGGER = LogManager.getLogger("Gallium");
 
     private final @Getter GalliumConfig config;
+    private final @Getter PermissionConfig permissionConfig;
 
     private @Getter JDA jda;
     private @Getter Guild home;
@@ -35,8 +37,9 @@ public class DiscordBot {
     private @Getter DatabaseManager databaseManager;
     private @Getter TicketManager ticketManager;
 
-    public DiscordBot(GalliumConfig config) {
+    public DiscordBot(GalliumConfig config, PermissionConfig permissionConfig) {
         this.config = config;
+        this.permissionConfig = permissionConfig;
     }
 
     public void start() throws LoginException, InterruptedException {

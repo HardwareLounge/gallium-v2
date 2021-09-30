@@ -2,6 +2,7 @@ package net.hardwarelounge.gallium.listener;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SelectionMenuEvent;
@@ -32,11 +33,13 @@ public class SlashCommandListener extends ListenerAdapter {
     public static final String SELECT_MENU_PREFIX = "select";
 
     private final DiscordBot parent;
+    private final Map<String, Role> roleMap;
     private final Map<String, SlashCommand> commandMap;
 
     public SlashCommandListener(DiscordBot parent) {
         this.parent = parent;
         commandMap = new HashMap<>();
+        roleMap = new HashMap<>();
 
         // Register all slash-commands
         registerCommands(parent.getJda(),
@@ -68,6 +71,10 @@ public class SlashCommandListener extends ListenerAdapter {
                             .collect(Collectors.toList())
             ).queue();
         }
+    }
+
+    private void loadRoles() {
+        
     }
 
     @Override

@@ -1,4 +1,6 @@
 .idea/
-config.yml
 .DS_Store
 target/
+
+config.yml
+permissions.yml

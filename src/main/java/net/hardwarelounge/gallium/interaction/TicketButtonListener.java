@@ -10,6 +10,8 @@ import net.dv8tion.jda.api.interactions.components.ButtonStyle;
 import net.hardwarelounge.gallium.ticket.TicketManager;
 import net.hardwarelounge.gallium.ticket.TicketType;
 import net.hardwarelounge.gallium.util.EmbedUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -20,6 +22,7 @@ import java.util.Objects;
 public class TicketButtonListener extends InteractionListenerAdapter {
 
     private static final String BUTTON_PREFIX = "ticket:";
+    private static final Logger logger = LogManager.getLogger(TicketButtonListener.class.getSimpleName());
 
     private final TicketManager ticketManager;
 
@@ -57,7 +60,7 @@ public class TicketButtonListener extends InteractionListenerAdapter {
                 event.reply("\uD83C\uDF89 Dein Ticket wurde erstellt: " + ticketChannel.getAsMention())
                         .setEphemeral(true).queue();
             } catch (NullPointerException | IndexOutOfBoundsException exception) {
-                exception.printStackTrace();
+                logger.error(exception);
                 event.reply("Invalid ticket type").setEphemeral(true).queue();
             }
         }

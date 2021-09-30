@@ -5,11 +5,15 @@ import net.dv8tion.jda.api.events.interaction.SelectionMenuEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.Interaction;
 import net.hardwarelounge.gallium.util.CommandFailedException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.persistence.PersistenceException;
 
 public class InteractionListenerAdapter extends ListenerAdapter {
+
+    private static final Logger logger = LogManager.getLogger(InteractionListenerAdapter.class.getSimpleName());
 
     @Override
     public final void onButtonClick(@NotNull ButtonClickEvent event) {
@@ -18,10 +22,10 @@ public class InteractionListenerAdapter extends ListenerAdapter {
         } catch (CommandFailedException exception) {
             sendErrorMessage(event, exception.getMessage());
         } catch (PersistenceException exception) {
-            exception.printStackTrace();
+            logger.error(exception);
             sendErrorMessage(event, "Ein Datenbankfehler ist aufgetreten (Code: 101)");
         } catch (RuntimeException exception) {
-            exception.printStackTrace();
+            logger.error(exception);
             sendErrorMessage(event, "Ein unbekannter Fehler ist aufgetreten (Code: 100)");
         }
     }
@@ -31,13 +35,13 @@ public class InteractionListenerAdapter extends ListenerAdapter {
         try {
             onSelectionMenuSafe(event);
         } catch (CommandFailedException exception) {
-            exception.printStackTrace();
+            logger.error(exception);
             sendErrorMessage(event, exception.getMessage());
         } catch (PersistenceException exception) {
-            exception.printStackTrace();
+            logger.error(exception);
             sendErrorMessage(event, "Ein Datenbankfehler ist aufgetreten (Code: 101)");
         } catch (RuntimeException exception) {
-            exception.printStackTrace();
+            logger.error(exception);
             sendErrorMessage(event, "Ein unbekannter Fehler ist aufgetreten (Code: 100)");
         }
     }

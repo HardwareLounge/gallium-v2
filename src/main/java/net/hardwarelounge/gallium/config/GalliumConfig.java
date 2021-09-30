@@ -6,8 +6,8 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-@EqualsAndHashCode
-public class GalliumConfig {
+@EqualsAndHashCode(callSuper = false)
+public class GalliumConfig extends DefaultConfigFactory {
 
     private String token;
     private String homeGuildId;
@@ -24,4 +24,9 @@ public class GalliumConfig {
     private String databasePassword;
     private Boolean databaseUseSSL;
 
+    public static GalliumConfig createDefault() {
+        GalliumConfig config = new GalliumConfig();
+        config.setDatabaseUseSSL(true);
+        return config;
+    }
 }
