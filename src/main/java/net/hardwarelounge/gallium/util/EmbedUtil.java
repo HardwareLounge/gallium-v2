@@ -12,7 +12,7 @@ import java.time.Instant;
 
 public class EmbedUtil {
 
-    private static final String prefix = "https://www.hardwarelounge.net/ticket?url=";
+    private static final String prefix = "https://hardwarelounge.github.io/gallium-v2/index.html?url=";
 
     public static EmbedBuilder defaultEmbed() {
         return new EmbedBuilder()

@@ -153,6 +153,8 @@ public class TicketCommand extends SlashCommand {
                 cause
         );
 
+        // TODO: "correctly" implement channel archive (see net.hardwarelounge.gallium.archive.*)
+
         try {
             ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
             InputStream fileStream = new ByteArrayInputStream(objectMapper
