@@ -1,11 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Redirecting...</title>
+    <title>Redirecting...</title>
 </head>
 <body>
+<p>Redirecting... Click <a href="#" id="link">here</a> if you are not being redirected automatically.</p>
+<noscript>
+    You need JavaScript in order to be redirected to the correct destination!
+</noscript>
+<script type="text/javascript">
+    const redirectURL = "https://developertk.github.io/discord-channel-archive/webview/index.html?ticket=";
 
-<p>Redirecting... (or not o.O)</p>
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticketURL = urlParams.get('url');
 
+    if (ticketURL) {
+        document.getElementById('link').href = redirectURL + ticketURL;
+        window.location = redirectURL + ticketURL;
+    } else {
+        let element = document.createElement('p');
+        element.innerText = "Missing URL Parameter '?url=<ticket-url>'";
+        document.body.appendChild(element);
+    }
+</script>
 </body>
 </html>
