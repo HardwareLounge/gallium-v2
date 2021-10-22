@@ -31,7 +31,7 @@ public class InteractionListenerAdapter extends ListenerAdapter {
     }
 
     @Override
-    public void onSelectionMenu(@NotNull SelectionMenuEvent event) {
+    public final void onSelectionMenu(@NotNull SelectionMenuEvent event) {
         try {
             onSelectionMenuSafe(event);
         } catch (CommandFailedException exception) {

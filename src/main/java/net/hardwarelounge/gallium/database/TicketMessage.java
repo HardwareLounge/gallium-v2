@@ -1,8 +1,10 @@
 package net.hardwarelounge.gallium.database;
 
 import lombok.*;
+import net.dv8tion.jda.api.entities.Message;
 
 import javax.persistence.*;
+import java.util.stream.Collectors;
 
 // lombok
 @Getter
@@ -30,5 +32,16 @@ public class TicketMessage {
 
     @Column(name = "attachments", nullable = false, length = 4000)
     private String attachments;
+
+    public static TicketMessage fromDiscordMessage(Message message) {
+        return new TicketMessage(
+                null,
+                message.getIdLong(),
+                message.getContentRaw(),
+                message.getAttachments().stream()
+                        .map(Message.Attachment::getUrl)
+                        .collect(Collectors.joining(";"))
+        );
+    }
 
 }

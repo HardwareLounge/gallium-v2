@@ -5,6 +5,7 @@ import net.hardwarelounge.gallium.ticket.TicketType;
 
 import javax.persistence.*;
 import java.util.List;
+import java.util.Set;
 
 // lombok
 @Getter
@@ -23,7 +24,7 @@ public class Ticket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private CachedUser owner;
 
     @Column(nullable = false)
@@ -36,13 +37,20 @@ public class Ticket {
     private Long discordChannelId;
 
     @ManyToMany
-    private List<CachedUser> ticketUsers;
+    private Set<CachedUser> ticketUsers;
+
+    @ManyToOne
+    private CachedUser closedUser;
+
+    @Column
+    private String closedCause;
 
     @OrderBy("id asc")
     @OneToMany(mappedBy = "ticket")
     private List<TicketMessage> ticketMessages;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private TicketType type;
 
 }

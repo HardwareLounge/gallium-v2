@@ -3,7 +3,6 @@ package net.hardwarelounge.gallium;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import lombok.SneakyThrows;
 import net.hardwarelounge.gallium.config.DefaultConfigFactory;
 import net.hardwarelounge.gallium.config.GalliumConfig;
 import net.hardwarelounge.gallium.config.PermissionConfig;

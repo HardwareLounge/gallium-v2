@@ -1,18 +1,25 @@
 package net.hardwarelounge.gallium.listener;
 
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.interaction.SelectionMenuEvent;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.hardwarelounge.gallium.DiscordBot;
 import net.hardwarelounge.gallium.command.InfoCommand;
 import net.hardwarelounge.gallium.command.SlashCommand;
 import net.hardwarelounge.gallium.command.TicketCommand;
+import net.hardwarelounge.gallium.config.CommandSubconfig;
+import net.hardwarelounge.gallium.config.RoleSubconfig;
 import net.hardwarelounge.gallium.util.CommandFailedException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -32,6 +39,8 @@ public class SlashCommandListener extends ListenerAdapter {
     public static final String BUTTON_PREFIX = "button";
     public static final String SELECT_MENU_PREFIX = "select";
 
+    private static final Logger commandLogger = LogManager.getLogger("SlashCommand");
+
     private final DiscordBot parent;
     private final Map<String, Role> roleMap;
     private final Map<String, SlashCommand> commandMap;
@@ -40,6 +49,8 @@ public class SlashCommandListener extends ListenerAdapter {
         this.parent = parent;
         commandMap = new HashMap<>();
         roleMap = new HashMap<>();
+
+        loadRoles();
 
         // Register all slash-commands
         registerCommands(parent.getJda(),
@@ -74,17 +85,48 @@ public class SlashCommandListener extends ListenerAdapter {
     }
 
     private void loadRoles() {
-        
+        for (Map.Entry<String, RoleSubconfig> roleEntry : parent.getPermissionConfig().getRoles().entrySet()) {
+            Role role = parent.getHome().getRoleById(roleEntry.getValue().getDiscordRoleId());
+
+            if (role == null) {
+                throw new IllegalStateException(String.format("Role %s <#%s> does not exist inside home guild!",
+                        roleEntry.getKey(), roleEntry.getValue().getDiscordRoleId()));
+            }
+
+            roleMap.put(roleEntry.getKey(), role);
+        }
     }
 
     @Override
     public void onSlashCommand(@NotNull SlashCommandEvent event) {
         if (commandMap.containsKey(event.getName())) {
             try {
-                commandMap.get(event.getName()).execute(event);
+                // the member is null if the slash command was executed per direct message
+                if (event.getMember() == null
+                        || hasPermission(event.getName(), event.getSubcommandName(), event.getMember())) {
+                    // log message
+                    commandLogger.info("{} executed {}",
+                            event.getUser(), commandToString(event));
+                    // execute command
+                    commandMap.get(event.getName()).execute(event);
+                } else {
+                    // log message
+                    commandLogger.warn("{} has no permission to execute {}",
+                            event.getUser(), commandToString(event));
+                    // notify user
+                    if (event.isAcknowledged()) {
+                        event.getHook().sendMessage("Du hast keine Berechtigung " +
+                                "diesen Befehl auszuführen!").queue();
+                    } else {
+                        event.reply("Du hast keine Berechtigung " +
+                                "diesen Befehl auszuführen!").queue();
+                    }
+                }
             } catch (NullPointerException | CommandFailedException exception) {
+                // notify user about failure
                 if (event.isAcknowledged()) {
-                    event.getHook().sendMessage(exception.getMessage().length() == 0 ? exception.getClass().getSimpleName() : exception.getMessage()).queue();
+                    event.getHook().sendMessage(exception.getMessage().length() == 0 ?
+                            exception.getClass().getSimpleName() : exception.getMessage()).queue();
                 } else {
                     event.reply(exception.getMessage()).queue();
                 }
@@ -92,6 +134,73 @@ public class SlashCommandListener extends ListenerAdapter {
         } else {
             event.reply("Fehler: der Befehl konnte nicht gefunden werden!").setEphemeral(true).queue();
         }
+    }
+
+    private String commandToString(SlashCommandEvent event) {
+        StringBuilder command = new StringBuilder("/" + event.getName());
+        command.append(event.getSubcommandGroup() != null && !event.getSubcommandGroup().isBlank() ?
+                " " + event.getSubcommandGroup() : "");
+        command.append(event.getSubcommandName() != null && !event.getSubcommandName().isBlank() ?
+                " " + event.getSubcommandName() : "");
+
+        for (OptionMapping option : event.getOptions()) {
+            command.append(" ").append(option.toString());
+        }
+
+        return command.toString();
+    }
+
+    private boolean hasPermission(final String command, final String subcommand, Member member) {
+        if (!member.getGuild().equals(parent.getHome())) {
+            // return false if the command was executed in a different guild
+            return false;
+        } else if (member.getPermissions().contains(Permission.ADMINISTRATOR)) {
+            return true;
+        }
+
+        // find CommandSubconfig permission object from the permissions configuration
+        CommandSubconfig permissions = parent.getPermissionConfig()
+                .getCommands()
+                .entrySet()
+                .stream()
+                // filter for entries matching command:* or command:subcommand
+                .filter(entry -> {
+                    String[] split = entry.getKey().split(":");
+                    if (split.length == 2) {
+                        return split[0].equalsIgnoreCase(command)
+                                && (split[1].equalsIgnoreCase(subcommand) || split[1].equals("*"));
+                    } else {
+                        return false;
+                    }
+                })
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
+
+        if (permissions == null || permissions.getPermissions() == null) {
+            return false;
+        }
+
+        if (permissions.getPermissions().containsKey("*")) {
+            return permissions.getPermissions().get("*");
+        }
+
+        // check if any of the members roles are set to be allowed for the current command
+        return permissions.isAllowedByDefault() || member.getRoles()
+                .stream()
+                // filter by roles the member has
+                .filter(roleMap::containsValue)
+                // map the JDA Role objects to roleNames from the permissions config
+                .map(role -> roleMap.entrySet()
+                        .stream()
+                        .filter(entry -> entry.getValue().equals(role))
+                        .map(Map.Entry::getKey)
+                        .findFirst()
+                        .orElse(null)
+                )
+                // check if any of the roleNames are set to be allowed for the command
+                .anyMatch(roleName -> permissions.getPermissions().containsKey(roleName)
+                                && permissions.getPermissions().get(roleName));
     }
 
     @Override

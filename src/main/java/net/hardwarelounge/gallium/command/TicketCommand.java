@@ -1,15 +1,31 @@
 package net.hardwarelounge.gallium.command;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
+import net.dv8tion.jda.api.utils.AttachmentOption;
 import net.hardwarelounge.gallium.DiscordBot;
 import net.hardwarelounge.gallium.database.Ticket;
 import net.hardwarelounge.gallium.ticket.TicketType;
+import net.hardwarelounge.gallium.util.CommandFailedException;
 import net.hardwarelounge.gallium.util.EmbedUtil;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class TicketCommand extends SlashCommand {
 
@@ -86,14 +102,81 @@ public class TicketCommand extends SlashCommand {
     }
 
     private void add(SlashCommandEvent event) {
+        Member member = Objects.requireNonNull(event.getOption("user")).getAsMember();
 
+        if (member == null) {
+            throw new CommandFailedException("Bitte gib ein gültiges Mitglied dieses Servers an!");
+        }
+
+        parent.getTicketManager().addUser(event.getTextChannel(), parent.getTicketManager().updateAndGetMember(member));
+
+        event.getTextChannel().getManager()
+                .putPermissionOverride(member, List.of(Permission.VIEW_CHANNEL), List.of())
+                .queue();
+
+        event.replyEmbeds(EmbedUtil.defaultEmbed()
+                .setDescription(member.getAsMention() + " wurde von "
+                        + event.getUser().getAsMention() + " zum Ticket hinzugefügt").build())
+                .setEphemeral(false)
+                .queue();
     }
 
     private void remove(SlashCommandEvent event) {
+        Member member = Objects.requireNonNull(event.getOption("user")).getAsMember();
 
+        if (member == null) {
+            throw new CommandFailedException("Bitte gib ein gültiges Mitglied dieses Servers an!");
+        }
+
+        parent.getTicketManager().removeUser(event.getTextChannel(), parent.getTicketManager().updateAndGetMember(member));
+
+        event.getTextChannel().getManager()
+                .putPermissionOverride(member, List.of(), List.of(Permission.VIEW_CHANNEL))
+                .queue();
+
+        event.replyEmbeds(EmbedUtil.defaultEmbed()
+                        .setDescription(member.getAsMention() + " wurde von "
+                                + event.getUser().getAsMention() + " vom Ticket entfernt").build())
+                .setEphemeral(false)
+                .queue();
     }
 
     private void close(SlashCommandEvent event) {
+        String cause = Optional.ofNullable(event.getOption("cause"))
+                .map(OptionMapping::getAsString)
+                .orElse("No cause provided");
 
+        event.getTextChannel().sendTyping().queue();
+        Ticket ticket = parent.getTicketManager().closeTicket(
+                event.getTextChannel(),
+                parent.getTicketManager().updateAndGetMember(event.getMember()),
+                cause
+        );
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
+            InputStream fileStream = new ByteArrayInputStream(objectMapper
+                    .writeValueAsString(ticket).getBytes(StandardCharsets.UTF_8));
+
+            parent.getTicketManager().getTicketLogChannel()
+                    .sendFile(fileStream, ticket.getId() + "-" + ticket.getName() + ".ticket")
+                    .queue(message -> {
+                        List<Message.Attachment> attachments = message.getAttachments();
+                        if (attachments.isEmpty()) {
+                            message.editMessage("Failed uploading ticket!").queue();
+                        } else {
+                            message.editMessage(
+                                    new MessageBuilder()
+                                            .setEmbeds(EmbedUtil.ticketCloseEmbed(ticket, attachments.get(0).getUrl()).build())
+                                            .build()
+                            ).queue();
+                        }
+                    });
+        } catch (JsonProcessingException exception) {
+            parent.getLogger().error(exception);
+            throw new CommandFailedException("Failed to serialize ticket object");
+        }
+
+        Objects.requireNonNull(parent.getHome().getTextChannelById(ticket.getDiscordChannelId())).delete().queue();
     }
 }

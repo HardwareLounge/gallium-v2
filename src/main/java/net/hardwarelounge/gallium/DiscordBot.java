@@ -97,4 +97,8 @@ public class DiscordBot {
         }
     }
 
+    public Logger getLogger() {
+        return LOGGER;
+    }
+
 }
