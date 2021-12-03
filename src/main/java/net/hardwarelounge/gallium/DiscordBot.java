@@ -7,11 +7,13 @@ import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.hardwarelounge.gallium.config.GalliumConfig;
 import net.hardwarelounge.gallium.config.PermissionConfig;
 import net.hardwarelounge.gallium.database.DatabaseManager;
 import net.hardwarelounge.gallium.listener.SlashCommandListener;
+import net.hardwarelounge.gallium.punishment.PunishmentManager;
 import net.hardwarelounge.gallium.ticket.TicketManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,6 +30,7 @@ public class DiscordBot {
 
     private final @Getter GalliumConfig config;
     private final @Getter PermissionConfig permissionConfig;
+    private final GalliumScheduledTasks galliumScheduledTasks;
 
     private @Getter JDA jda;
     private @Getter Guild home;
@@ -36,10 +39,12 @@ public class DiscordBot {
 
     private @Getter DatabaseManager databaseManager;
     private @Getter TicketManager ticketManager;
+    private @Getter PunishmentManager punishmentManager;
 
     public DiscordBot(GalliumConfig config, PermissionConfig permissionConfig) {
         this.config = config;
         this.permissionConfig = permissionConfig;
+        this.galliumScheduledTasks = new GalliumScheduledTasks(this);
     }
 
     public void start() throws LoginException, InterruptedException {
@@ -63,6 +68,9 @@ public class DiscordBot {
 
         LOGGER.info("Finished startup process!");
         jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.watching(getHome().getMemberCount() - 1 + " Users"));
+
+        LOGGER.info("Scheduling tasks...");
+        galliumScheduledTasks.scheduleTasks();
     }
 
     private void initializeEventListeners() {
@@ -72,23 +80,27 @@ public class DiscordBot {
     private void initializeManagers() {
         databaseManager = new DatabaseManager(this);
         ticketManager = new TicketManager(this);
+        punishmentManager = new PunishmentManager(this);
+        punishmentManager.pardonExpiredPunishments();
     }
 
     public void using(Consumer<Session> sessionConsumer) {
-        Session session = databaseManager.getSessionFactory().openSession();
-        session.beginTransaction();
-        sessionConsumer.accept(session);
-        session.getTransaction().commit();
-        session.close();
+        try (Session session = databaseManager.getSessionFactory().openSession()) {
+            session.beginTransaction();
+            sessionConsumer.accept(session);
+            session.getTransaction().commit();
+            session.close();
+        }
     }
 
     public <T> T using(Function<Session, T> sessionConsumer) {
-        Session session = databaseManager.getSessionFactory().openSession();
-        session.beginTransaction();
-        T returnValue = sessionConsumer.apply(session);
-        session.getTransaction().commit();
-        session.close();
-        return returnValue;
+        try (Session session = databaseManager.getSessionFactory().openSession()) {
+            session.beginTransaction();
+            T returnValue = sessionConsumer.apply(session);
+            session.getTransaction().commit();
+            session.close();
+            return returnValue;
+        }
     }
 
     public void addEventListener(ListenerAdapter... eventListener) {

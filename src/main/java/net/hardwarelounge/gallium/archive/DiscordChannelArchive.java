@@ -1,9 +1,7 @@
 package net.hardwarelounge.gallium.archive;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.Map;
 
@@ -11,8 +9,10 @@ import java.util.Map;
  * @version discord-channel-archive Version 1.0
  */
 @Data
-@NoArgsConstructor
+@Builder
 @EqualsAndHashCode
+@NoArgsConstructor
+@AllArgsConstructor
 public class DiscordChannelArchive {
     @JsonProperty("name")
     private String name;

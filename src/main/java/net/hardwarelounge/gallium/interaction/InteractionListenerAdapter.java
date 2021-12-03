@@ -22,10 +22,10 @@ public class InteractionListenerAdapter extends ListenerAdapter {
         } catch (CommandFailedException exception) {
             sendErrorMessage(event, exception.getMessage());
         } catch (PersistenceException exception) {
-            logger.error(exception);
+            logger.error("Exception in button click handler", exception);
             sendErrorMessage(event, "Ein Datenbankfehler ist aufgetreten (Code: 101)");
         } catch (RuntimeException exception) {
-            logger.error(exception);
+            logger.error("Exception in button click handler", exception);
             sendErrorMessage(event, "Ein unbekannter Fehler ist aufgetreten (Code: 100)");
         }
     }
@@ -38,10 +38,10 @@ public class InteractionListenerAdapter extends ListenerAdapter {
             logger.error(exception);
             sendErrorMessage(event, exception.getMessage());
         } catch (PersistenceException exception) {
-            logger.error(exception);
+            logger.error("Exception in select menu click handler", exception);
             sendErrorMessage(event, "Ein Datenbankfehler ist aufgetreten (Code: 101)");
         } catch (RuntimeException exception) {
-            logger.error(exception);
+            logger.error("Exception in select menu click handler", exception);
             sendErrorMessage(event, "Ein unbekannter Fehler ist aufgetreten (Code: 100)");
         }
     }

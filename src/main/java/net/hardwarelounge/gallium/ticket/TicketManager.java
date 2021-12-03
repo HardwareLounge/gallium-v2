@@ -1,29 +1,28 @@
 package net.hardwarelounge.gallium.ticket;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
+import lombok.val;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.hardwarelounge.gallium.DiscordBot;
+import net.hardwarelounge.gallium.archive.ArchiveMessage;
+import net.hardwarelounge.gallium.archive.ArchiveRole;
+import net.hardwarelounge.gallium.archive.ArchiveUserData;
+import net.hardwarelounge.gallium.archive.DiscordChannelArchive;
 import net.hardwarelounge.gallium.database.CachedUser;
 import net.hardwarelounge.gallium.database.Ticket;
 import net.hardwarelounge.gallium.database.TicketMessage;
 import net.hardwarelounge.gallium.interaction.TicketButtonListener;
 import net.hardwarelounge.gallium.util.CommandFailedException;
 import net.hardwarelounge.gallium.util.EmbedUtil;
+import net.hardwarelounge.gallium.util.Manager;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-public class TicketManager {
+public class TicketManager extends Manager {
 
-    private final DiscordBot parent;
     private final TicketButtonListener ticketButtonListener;
 
     private final MessageChannel ticketChannel;
@@ -31,7 +30,7 @@ public class TicketManager {
     private final Category ticketCategory;
 
     public TicketManager(DiscordBot parent) {
-        this.parent = parent;
+        super(parent);
         ticketButtonListener = new TicketButtonListener(this);
         parent.addEventListener(ticketButtonListener);
 
@@ -75,7 +74,7 @@ public class TicketManager {
             users.add(owner);
             ticket.setTicketUsers(users);
 
-            int ticketId = (Integer) session.save(ticket);
+            Number ticketId = (Number) session.save(ticket);
 
             TextChannel textChannel = ticketCategory.createTextChannel(type.getId() + "-" + ticketId).complete();
             ticket.setDiscordChannelId(textChannel.getIdLong());
@@ -175,6 +174,55 @@ public class TicketManager {
         });
     }
 
+    public DiscordChannelArchive archiveTicket(Ticket ticket) {
+        Map<String, ArchiveRole> roleMap = new HashMap<>();
+        Map<String, ArchiveUserData> userData = new HashMap<>();
+
+        roleMap.put("-1", ArchiveRole.builder().name("everyone").color(0x95a5a6).build());
+
+        for (CachedUser ticketUser : ticket.getTicketUsers()) {
+            Member member = parent.getHome().getMemberById(ticketUser.getId());
+
+            userData.putIfAbsent(String.valueOf(ticketUser.getId()), ArchiveUserData.builder()
+                    .lastUsername(ticketUser.getUsername())
+                    .lastTag(ticketUser.getDiscriminator())
+                    .lastNickname(ticketUser.getNickname())
+                    .topRole(member != null && member.getRoles().size() > 0 ? member.getRoles().get(0).getId() : "-1")
+                    .lastAvatar(member != null ? member.getUser().getAvatarUrl() : "")
+                    .build()
+            );
+
+            if (member != null) {
+                for (Role role : member.getRoles()) {
+                    roleMap.putIfAbsent(role.getId(), ArchiveRole.builder()
+                            .name(role.getName())
+                            .color(role.getColorRaw())
+                            .build());
+                }
+            }
+        }
+
+        List<ArchiveMessage> messages = ticket.getTicketMessages()
+                .stream()
+                .map(ticketMessage -> ArchiveMessage.builder()
+                        .id(String.valueOf(ticketMessage.getId()))
+                        .author(ticketMessage.getAuthor())
+                        .content(ticketMessage.getContent())
+                        .embeds(ticketMessage.getEmbeds().toArray(new String[0]))
+                        .attachments(ticketMessage.getAttachments().toArray(new String[0]))
+                        .build())
+                .toList();
+
+        return DiscordChannelArchive.builder()
+                .name(ticket.getName())
+                .id(String.valueOf(ticket.getId()))
+                .topic(ticket.getType().getName() + " Ticket von " + ticket.getOwner().getUsername() + ticket.getOwner().getDiscriminator())
+                .roles(roleMap)
+                .userData(userData)
+                .messages(messages.toArray(new ArchiveMessage[0]))
+                .build();
+    }
+
     private List<TicketMessage> getMessagesAndSetUsers(Ticket ticket, TextChannel channel) {
         List<TicketMessage> messageList = new ArrayList<>();
         Set<User> users = new HashSet<>();
@@ -186,50 +234,6 @@ public class TicketManager {
 
         ticket.setTicketUsers(users.stream().map(this::updateAndGetMember).collect(Collectors.toSet()));
         return messageList;
-    }
-
-    public CachedUser updateAndGetMember(Member member) {
-        return parent.using(session -> {
-            CachedUser cachedUser = session.get(CachedUser.class, member.getIdLong());
-
-            if (cachedUser == null) {
-                cachedUser = new CachedUser(
-                        member.getIdLong(),
-                        member.getUser().getName(),
-                        member.getUser().getDiscriminator(),
-                        member.getNickname()
-                );
-            } else {
-                cachedUser.setUsername(member.getUser().getName());
-                cachedUser.setDiscriminator(member.getUser().getDiscriminator());
-                cachedUser.setNickname(member.getNickname());
-            }
-
-            session.saveOrUpdate(cachedUser);
-            return cachedUser;
-        });
-    }
-
-    public CachedUser updateAndGetMember(User invalidMember) {
-        return parent.using(session -> {
-            CachedUser cachedUser = session.get(CachedUser.class, invalidMember.getIdLong());
-
-            if (cachedUser == null) {
-                cachedUser = new CachedUser(
-                        invalidMember.getIdLong(),
-                        invalidMember.getName(),
-                        invalidMember.getDiscriminator(),
-                        null
-                );
-            } else {
-                cachedUser.setUsername(invalidMember.getName());
-                cachedUser.setDiscriminator(invalidMember.getDiscriminator());
-                cachedUser.setNickname(null);
-            }
-
-            session.saveOrUpdate(cachedUser);
-            return cachedUser;
-        });
     }
 
 }

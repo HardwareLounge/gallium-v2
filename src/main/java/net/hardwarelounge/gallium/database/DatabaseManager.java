@@ -36,6 +36,7 @@ public class DatabaseManager {
                     .addAnnotatedClass(Ticket.class)
                     .addAnnotatedClass(CachedUser.class)
                     .addAnnotatedClass(TicketMessage.class)
+                    .addAnnotatedClass(ModAction.class)
                     .buildSessionFactory();
         } catch (HibernateException exception) {
             LogManager.getLogger("Hibernate")

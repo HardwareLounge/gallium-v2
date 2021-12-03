@@ -1,12 +1,12 @@
 package net.hardwarelounge.gallium.archive;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
-@NoArgsConstructor
+@Builder
 @EqualsAndHashCode
+@NoArgsConstructor
+@AllArgsConstructor
 public class ArchiveMessage {
     private String id;
     private String author;

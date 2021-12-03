@@ -2,12 +2,14 @@ package net.hardwarelounge.gallium.util;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.User;
+import net.hardwarelounge.gallium.database.ModAction;
 import net.hardwarelounge.gallium.database.Ticket;
 import net.hardwarelounge.gallium.ticket.TicketType;
 
 import java.awt.Color;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 
 public class EmbedUtil {
@@ -56,8 +58,23 @@ public class EmbedUtil {
                 .addField("Geschlossen durch", ticket.getClosedUser().getAsMention() + " - "
                         + ticket.getClosedUser().getUsername() + "#" + ticket.getClosedUser().getDiscriminator(), true)
                 .addField("Schließungsgrund", ticket.getClosedCause(), true)
-                .addField("Ticket-Log", prefix + URLEncoder.encode(url, StandardCharsets.UTF_8), false)
-                ;
+                .addField("Ticket-Log", prefix + URLEncoder.encode(url, StandardCharsets.UTF_8), false);
+    }
+
+    public static EmbedBuilder modActionEmbed(ModAction action) {
+        return defaultEmbed()
+                .setTitle("Mod Action #" + action.getId())
+                .addField("ID", String.valueOf(action.getId()), true)
+                .addField("Art", "`" + action.getType().name() + "`", true)
+                .addField("Dauer", Duration.ofMillis(action.getDuration()).toString(), true)
+                .addField("Moderator", action.getPerformedBy().toString(), false)
+                .addField("Bestrafter", action.getPerformedOn().toString(), false)
+                .addField("Grund", action.getPerformedBecause(), false)
+                .addField("Erstellungszeitpunkt", String.valueOf(action.getPerformedAt()), true)
+                .addField("Ist Aufgehoben?", String.valueOf(action.isPardoned()), true)
+                .addField("Aufgh. von", String.valueOf(action.getPardonedBy()), true)
+                .addField("Aufhebegrund", String.valueOf(action.getPardonedBecause()), true)
+                .addField("Aufhebezeitpunkt", String.valueOf(action.getPardonedAt()), true);
     }
 
 }

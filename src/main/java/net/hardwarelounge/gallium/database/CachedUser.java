@@ -7,7 +7,6 @@ import javax.persistence.*;
 // lombok
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 // JPA
@@ -33,6 +32,11 @@ public class CachedUser {
     @Override
     public boolean equals(Object obj) {
         return (obj instanceof CachedUser user) && user.id == this.id;
+    }
+
+    @Override
+    public String toString() {
+        return id + "(" + username + "#" + discriminator + ")";
     }
 
     public String getAsMention() {

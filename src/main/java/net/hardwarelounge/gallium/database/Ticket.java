@@ -22,7 +22,7 @@ public class Ticket {
     @Id
     @Column(name = "id", unique = true, nullable = false)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private long id;
 
     @ManyToOne(optional = false)
     private CachedUser owner;

@@ -10,9 +10,12 @@
     </Appenders>
 
     <Loggers>
-        <Root level="info">
+        <Root level="DEBUG">
             <AppenderRef ref="Console"/>
         </Root>
+
+        <Logger name="org.hibernate" level="INFO">
+        </Logger>
 
         <Logger name="net.dv8tion.jda" level="WARN">
             <AppenderRef ref="Console"/>

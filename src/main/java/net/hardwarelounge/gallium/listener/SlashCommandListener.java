@@ -12,9 +12,7 @@ import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.hardwarelounge.gallium.DiscordBot;
-import net.hardwarelounge.gallium.command.InfoCommand;
-import net.hardwarelounge.gallium.command.SlashCommand;
-import net.hardwarelounge.gallium.command.TicketCommand;
+import net.hardwarelounge.gallium.command.*;
 import net.hardwarelounge.gallium.config.CommandSubconfig;
 import net.hardwarelounge.gallium.config.RoleSubconfig;
 import net.hardwarelounge.gallium.util.CommandFailedException;
@@ -55,7 +53,15 @@ public class SlashCommandListener extends ListenerAdapter {
         // Register all slash-commands
         registerCommands(parent.getJda(),
                 new InfoCommand(parent, "info"),
-                new TicketCommand(parent, "ticket")
+                new TicketCommand(parent, "ticket"),
+
+                new PunishmentCommands.WarnCommand(parent, "warn", "warn"),
+                new PunishmentCommands.MuteCommand(parent, "mute", "mute"),
+                new PunishmentCommands.BanCommand(parent, "ban", "role_ban"),
+
+                new ModerationCommands.ModLogCommand(parent, "mod-log"),
+                new ModerationCommands.PardonAllCommand(parent, "pardon-all"),
+                new ModerationCommands.PardonCommand(parent, "pardon")
         );
     }
 

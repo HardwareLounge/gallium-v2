@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.utils.AttachmentOption;
 import net.hardwarelounge.gallium.DiscordBot;
+import net.hardwarelounge.gallium.archive.DiscordChannelArchive;
 import net.hardwarelounge.gallium.database.Ticket;
 import net.hardwarelounge.gallium.ticket.TicketType;
 import net.hardwarelounge.gallium.util.CommandFailedException;
@@ -154,11 +155,12 @@ public class TicketCommand extends SlashCommand {
         );
 
         // TODO: "correctly" implement channel archive (see net.hardwarelounge.gallium.archive.*)
+        DiscordChannelArchive archive = parent.getTicketManager().archiveTicket(ticket);
 
         try {
             ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
             InputStream fileStream = new ByteArrayInputStream(objectMapper
-                    .writeValueAsString(ticket).getBytes(StandardCharsets.UTF_8));
+                    .writeValueAsString(archive).getBytes(StandardCharsets.UTF_8));
 
             parent.getTicketManager().getTicketLogChannel()
                     .sendFile(fileStream, ticket.getId() + "-" + ticket.getName() + ".ticket")
