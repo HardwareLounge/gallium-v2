@@ -13,5 +13,6 @@ import java.util.Map;
 @EqualsAndHashCode
 public class LimitSubconfig {
     private String name;
-    private Map<String, Integer> limit;
+    private boolean allowedByDefault;
+    private Map<String, Long> limit;
 }

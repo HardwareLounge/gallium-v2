@@ -8,20 +8,28 @@ import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.hardwarelounge.gallium.DiscordBot;
+import net.hardwarelounge.gallium.config.LimitSubconfig;
+import net.hardwarelounge.gallium.config.PermissionConfig;
+import net.hardwarelounge.gallium.config.RoleSubconfig;
 import net.hardwarelounge.gallium.database.CachedUser;
 import net.hardwarelounge.gallium.database.ModAction;
 import net.hardwarelounge.gallium.punishment.Punishment;
 import net.hardwarelounge.gallium.util.CommandFailedException;
 import net.hardwarelounge.gallium.util.EmbedUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.persistence.PersistenceException;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class PunishmentCommands {
 
     private static final Pattern DURATION_FORMAT_PATTERN = Pattern.compile("\\d+[smhdMy]");
+
+    private static final Logger LOGGER = LogManager.getLogger(PunishmentCommands.class.getSimpleName());
 
     public abstract static class RolePunishmentCommand extends SlashCommand {
         private final @Getter Role role;
@@ -97,11 +105,16 @@ public class PunishmentCommands {
 
         Member targetMember = parent.getHome().getMember(targetUser);
         if (targetMember == null) throw new CommandFailedException("Could not find this user");
-        parent.getHome().addRoleToMember(targetMember, role).queue();
+
+        if (!checkLimit(parent.getPermissionConfig(), type, event.getMember(), duration)) {
+            LOGGER.warn("{} exceeded limit (requested: {}s)", event.getMember(), duration);
+            throw new CommandFailedException("Du hast keine Berechtigung dazu (Limit überschritten)");
+        }
 
         ModAction result;
 
         try {
+            parent.getHome().addRoleToMember(targetMember, role).queue();
             result = parent.getPunishmentManager().punish(target, moderator, type, duration, cause);
         } catch (PersistenceException exception) {
             parent.getHome().removeRoleFromMember(targetMember, role).queue();
@@ -114,6 +127,35 @@ public class PunishmentCommands {
                         type.name(), target.getId(), target.getNickname() + "#" + target.getDiscriminator()))
                 .build()
         ).setEphemeral(true).queue();
+
+        // notify the user
+        targetMember.getUser().openPrivateChannel().queue(privateChannel -> privateChannel
+                .sendMessageEmbeds(EmbedUtil.punishmentUserNotification(result).build()).queue());
+    }
+
+    private static boolean checkLimit(PermissionConfig config, Punishment type, Member member, long duration) {
+        long maximumDuration = -1;
+
+        if (!config.getLimits().containsKey("punishment_" + type.name().toLowerCase())) {
+            LogManager.getLogger().error("punishment_" + type.name() + " doesn't exist", new RuntimeException());
+        }
+
+        LimitSubconfig limit = config.getLimits().get("punishment_" + type.name().toLowerCase());
+
+        for (Role role : member.getRoles()) { // for each role from user
+            for (Map.Entry<String, RoleSubconfig> entry : config.getRoles().entrySet()) { // and for each role in config
+                if (role.getId().equals(entry.getValue().getDiscordRoleId()) // check if user role matches config role
+                        && limit.getLimit().containsKey(entry.getKey())) { // and check if limit exists
+                    maximumDuration = limit.getLimit().get(entry.getKey());
+                }
+            }
+        }
+
+        if (maximumDuration == -1 && limit.isAllowedByDefault()) {
+            return true;
+        } else {
+            return maximumDuration > 0 && duration <= maximumDuration;
+        }
     }
 
     private static long parseDurationSeconds(String fromString) {

@@ -77,4 +77,15 @@ public class EmbedUtil {
                 .addField("Aufhebezeitpunkt", String.valueOf(action.getPardonedAt()), true);
     }
 
+    public static EmbedBuilder punishmentUserNotification(ModAction action) {
+        return defaultEmbed()
+                .setDescription(String.format("Ein Moderator hat dich mit einem `%s` für `%s` Sekunden bestraft!",
+                        action.getType().name(), action.getDuration()))
+                .setTitle("Mod Action #" + action.getId())
+                .addField("ID", String.valueOf(action.getId()), true)
+                .addField("Bestrafter", action.getPerformedOn().toString(), false)
+                .addField("Grund", action.getPerformedBecause(), false)
+                .addField("Erstellungszeitpunkt", String.valueOf(action.getPerformedAt()), true);
+    }
+
 }

@@ -61,7 +61,7 @@ public class PunishmentManager extends Manager {
     }
 
     public void pardonAll(CachedUser target, CachedUser moderator, String cause) {
-        List<ModAction> modActions = listPunishments(target);
+        List<ModAction> modActions = listWarnsMutes(target);
         parent.using(session -> {
             parent.getLogger().info("Pardoning all mutes and bans from {}", target);
             for (ModAction modAction : modActions) {
@@ -74,10 +74,42 @@ public class PunishmentManager extends Manager {
     }
 
     @SuppressWarnings("unchecked")
+    public ModAction pardon(long id, CachedUser moderator, String cause) {
+        return parent.using(session -> {
+            Optional<ModAction> optionalAction = session.createQuery("from ModAction where id = :id")
+                    .setParameter("id", id)
+                    .getResultStream()
+                    .findAny();
+
+            if (optionalAction.isEmpty()) {
+                return null;
+            } else {
+                ModAction action = optionalAction.get();
+                action.setPardonedAt(Date.from(Instant.now()));
+                action.setPardonedBy(moderator);
+                action.setPardonedBecause(cause);
+                session.saveOrUpdate(action);
+                return action;
+            }
+        });
+    }
+
+    @SuppressWarnings("unchecked")
     public List<ModAction> listPunishments(CachedUser user) {
         return (List<ModAction>) parent.using(session -> {
             return session.createQuery("from ModAction where performedOn = :user")
                     .setParameter("user", user)
+                    .getResultList();
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<ModAction> listWarnsMutes(CachedUser user) {
+        return (List<ModAction>) parent.using(session -> {
+            return session.createQuery("from ModAction where performedOn = :user and pardoned = false and (type = :a or type = :b)")
+                    .setParameter("user", user)
+                    .setParameter("a", Punishment.WARN)
+                    .setParameter("b", Punishment.MUTE)
                     .getResultList();
         });
     }

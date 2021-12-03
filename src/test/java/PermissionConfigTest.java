@@ -26,10 +26,10 @@ public class PermissionConfigTest {
         permissionMap.put("software", true);
         config.getCommands().put("ticket:*", new CommandSubconfig(false, permissionMap));
 
-        HashMap<String, Integer> limitMap = new HashMap<>();
-        limitMap.put("hardware", 30);
-        limitMap.put("software", 30);
-        config.getLimits().put("punishment_warn", new LimitSubconfig("Maximum Warn Time (in Days)", limitMap));
+        HashMap<String, Long> limitMap = new HashMap<>();
+        limitMap.put("hardware", 30L);
+        limitMap.put("software", 30L);
+        config.getLimits().put("punishment_warn", new LimitSubconfig("Maximum Warn Time (in Days)", false, limitMap));
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         objectMapper.writeValue(new File("permissions.yml"), config);

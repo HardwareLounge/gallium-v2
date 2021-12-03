@@ -1,13 +1,16 @@
 package net.hardwarelounge.gallium.command;
 
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.hardwarelounge.gallium.DiscordBot;
 import net.hardwarelounge.gallium.database.CachedUser;
 import net.hardwarelounge.gallium.database.ModAction;
+import net.hardwarelounge.gallium.util.CommandFailedException;
 import net.hardwarelounge.gallium.util.EmbedUtil;
 
 import java.util.ArrayList;
@@ -54,8 +57,8 @@ public class ModerationCommands {
 
                     if (action.isPardoned()) {
                         message.append(String.format(" pardoned by `%s` at `%s` because `%s`",
-                                action.getPardonedBy().toString(),
-                                action.getPardonedAt().toString(),
+                                action.getPardonedBy(),
+                                action.getPardonedAt(),
                                 action.getPardonedBecause()
                         ));
                     }
@@ -85,12 +88,30 @@ public class ModerationCommands {
         public CommandData commandData() {
             return new CommandData("pardon-all", "Pardons all active bans and mutes")
                     .addOption(OptionType.USER, "target", "The target user", true)
-                    .addOption(OptionType.STRING, "cause", "Cause for the pardon");
+                    .addOption(OptionType.STRING, "cause", "Cause for the pardon", true);
         }
 
         @Override
         public void execute(SlashCommandEvent event) {
+            OptionMapping targetOption = event.getOption("target");
+            OptionMapping causeOption = event.getOption("cause");
+            if (targetOption == null || causeOption == null) throw new CommandFailedException();
+            if (causeOption.getAsString().isBlank()) throw new CommandFailedException("Gib einen Grund an!");
 
+            Member target = targetOption.getAsMember();
+            if (target == null) throw new CommandFailedException("User nicht gefunden!");
+            CachedUser cachedTarget = parent.getPunishmentManager().updateAndGetMember(target);
+
+            parent.getPunishmentManager().pardonAll(
+                    cachedTarget,
+                    parent.getPunishmentManager().updateAndGetMember(event.getMember()),
+                    targetOption.getAsString()
+            );
+
+            event.replyEmbeds(EmbedUtil.defaultEmbed()
+                    .setDescription("Alle Verwarnungen und Mutes von " + cachedTarget + " aufgehoben.")
+                    .build()
+            ).queue();
         }
     }
 
@@ -103,12 +124,27 @@ public class ModerationCommands {
         public CommandData commandData() {
             return new CommandData("pardon", "Pardon a specific punishment")
                     .addOption(OptionType.INTEGER, "action-id", "The punishment to pardon", true)
-                    .addOption(OptionType.STRING, "cause", "Cause for the pardon");
+                    .addOption(OptionType.STRING, "cause", "Cause for the pardon", true);
         }
 
         @Override
         public void execute(SlashCommandEvent event) {
+            OptionMapping idOption = event.getOption("action-id");
+            OptionMapping causeOption = event.getOption("cause");
+            if (idOption == null || causeOption == null) throw new CommandFailedException();
 
+            ModAction modAction = parent.getPunishmentManager().pardon(
+                    idOption.getAsLong(),
+                    parent.getPunishmentManager().updateAndGetMember(event.getMember()),
+                    causeOption.getAsString()
+            );
+
+            if (modAction == null) {
+                event.reply("Pardon ID " + idOption.getAsString() + " nicht gefunden!")
+                        .setEphemeral(true).queue();
+            } else {
+                event.replyEmbeds(EmbedUtil.modActionEmbed(modAction).build()).setEphemeral(true).queue();
+            }
         }
     }
 

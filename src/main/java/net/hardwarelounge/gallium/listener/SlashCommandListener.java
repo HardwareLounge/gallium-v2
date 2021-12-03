@@ -122,20 +122,22 @@ public class SlashCommandListener extends ListenerAdapter {
                     // notify user
                     if (event.isAcknowledged()) {
                         event.getHook().sendMessage("Du hast keine Berechtigung " +
-                                "diesen Befehl auszuführen!").queue();
+                                "diesen Befehl auszuführen!").setEphemeral(true).queue();
                     } else {
                         event.reply("Du hast keine Berechtigung " +
-                                "diesen Befehl auszuführen!").queue();
+                                "diesen Befehl auszuführen!").setEphemeral(true).queue();
                     }
                 }
             } catch (NullPointerException | CommandFailedException exception) {
                 // notify user about failure
                 if (event.isAcknowledged()) {
                     event.getHook().sendMessage(exception.getMessage().length() == 0 ?
-                            exception.getClass().getSimpleName() : exception.getMessage()).queue();
+                            exception.getClass().getSimpleName() : exception.getMessage()).setEphemeral(true).queue();
                 } else {
-                    event.reply(exception.getMessage()).queue();
+                    event.reply(exception.getMessage()).setEphemeral(true).queue();
                 }
+
+                if (exception instanceof NullPointerException) commandLogger.error("", exception);
             }
         } else {
             event.reply("Fehler: der Befehl konnte nicht gefunden werden!").setEphemeral(true).queue();
