@@ -2,6 +2,7 @@ package net.hardwarelounge.gallium.util;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.User;
+import net.hardwarelounge.gallium.database.CachedUser;
 import net.hardwarelounge.gallium.database.ModAction;
 import net.hardwarelounge.gallium.database.Ticket;
 import net.hardwarelounge.gallium.ticket.TicketType;
@@ -50,6 +51,7 @@ public class EmbedUtil {
         return defaultEmbed()
                 .setTitle("Ticket #" + ticket.getId() + " by " + ticket.getOwner().getUsername()
                         + "#" + ticket.getOwner().getDiscriminator())
+                .setColor(DiscordRoleColors.TEAL.getPrimary())
                 .addField("ID", String.valueOf(ticket.getId()), true)
                 .addField("Typ", ticket.getType().getName(), true)
                 .addField("Name", ticket.getName(), true)
@@ -72,7 +74,7 @@ public class EmbedUtil {
                 .addField("Grund", action.getPerformedBecause(), false)
                 .addField("Erstellungszeitpunkt", String.valueOf(action.getPerformedAt()), true)
                 .addField("Ist Aufgehoben?", String.valueOf(action.isPardoned()), true)
-                .addField("Aufgh. von", String.valueOf(action.getPardonedBy()), true)
+                .addField("Aufgh. von", getPardonedBy(action.getPardonedBy()), true)
                 .addField("Aufhebegrund", String.valueOf(action.getPardonedBecause()), true)
                 .addField("Aufhebezeitpunkt", String.valueOf(action.getPardonedAt()), true);
     }
@@ -97,7 +99,7 @@ public class EmbedUtil {
                 .addField("Dauer", Duration.ofMillis(action.getDuration()).toString(), true)
                 .addField("Bestrafter", action.getPerformedOn().toString(), false)
                 .addField("Grund", action.getPerformedBecause(), false)
-                .addField("Aufgh. von", String.valueOf(action.getPardonedBy()), true)
+                .addField("Aufgh. von", getPardonedBy(action.getPardonedBy()), true)
                 .addField("Aufhebegrund", String.valueOf(action.getPardonedBecause()), true)
                 .addField("Aufhebezeitpunkt", String.valueOf(action.getPardonedAt()), true);
     }
@@ -111,6 +113,10 @@ public class EmbedUtil {
                 .addField("Bestrafter", action.getPerformedOn().toString(), false)
                 .addField("Grund", action.getPerformedBecause(), false)
                 .addField("Erstellungszeitpunkt", String.valueOf(action.getPerformedAt()), true);
+    }
+
+    public static String getPardonedBy(CachedUser pardonedBy) {
+        return pardonedBy == null ? "SYSTEM" : String.valueOf(pardonedBy);
     }
 
 }

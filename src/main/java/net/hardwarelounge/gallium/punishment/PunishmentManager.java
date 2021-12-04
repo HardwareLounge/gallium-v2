@@ -170,7 +170,9 @@ public class PunishmentManager extends Manager {
                         if (difference <= 0) {
                             parent.getLogger().info("Pardoned ModAction #{} because it expired.", action.getId());
                             action.setPardoned(true);
+                            action.setPardonedBecause("Automatic pardon after action expired.");
                             session.saveOrUpdate(action);
+                            logPardon(action);
 
                             pardonedCount.getAndIncrement();
                             expiredActions.add(new UserPunishment(action.getPerformedOn(), action.getType()));
