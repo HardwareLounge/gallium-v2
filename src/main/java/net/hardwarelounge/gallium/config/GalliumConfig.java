@@ -12,6 +12,8 @@ public class GalliumConfig extends DefaultConfigFactory {
     private String token;
     private String homeGuildId;
 
+    private String modLogChannelId;
+
     private String ticketChannelId;
     private String ticketCategoryId;
     private String ticketLogChannelId;

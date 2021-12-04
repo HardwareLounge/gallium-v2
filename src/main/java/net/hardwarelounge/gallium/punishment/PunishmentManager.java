@@ -1,11 +1,14 @@
 package net.hardwarelounge.gallium.punishment;
 
+import lombok.Getter;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.hardwarelounge.gallium.DiscordBot;
 import net.hardwarelounge.gallium.database.CachedUser;
 import net.hardwarelounge.gallium.database.ModAction;
+import net.hardwarelounge.gallium.util.EmbedUtil;
 import net.hardwarelounge.gallium.util.Manager;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,10 +20,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PunishmentManager extends Manager {
 
     private final Map<Punishment, Role> punishmentRoleMap;
+    private final @Getter TextChannel modLogChannel;
 
     public PunishmentManager(DiscordBot parent) {
         super(parent);
         punishmentRoleMap = loadRoles();
+        modLogChannel = Objects.requireNonNull(parent.getHome()
+                .getTextChannelById(parent.getConfig().getModLogChannelId()));
     }
 
     private Map<Punishment, Role> loadRoles() {
@@ -56,12 +62,13 @@ public class PunishmentManager extends Manager {
             action.setPerformedBecause(cause);
 
             session.save(action);
+            logPunishment(action);
             return action;
         });
     }
 
     public void pardonAll(CachedUser target, CachedUser moderator, String cause) {
-        List<ModAction> modActions = listWarnsMutes(target);
+        List<ModAction> modActions = listMutesBans(target);
         parent.using(session -> {
             parent.getLogger().info("Pardoning all mutes and bans from {}", target);
             for (ModAction modAction : modActions) {
@@ -69,6 +76,7 @@ public class PunishmentManager extends Manager {
                 modAction.setPardonedBy(moderator);
                 modAction.setPardonedBecause(cause);
                 session.saveOrUpdate(modAction);
+                logPardon(modAction);
             }
         });
     }
@@ -89,6 +97,7 @@ public class PunishmentManager extends Manager {
                 action.setPardonedBy(moderator);
                 action.setPardonedBecause(cause);
                 session.saveOrUpdate(action);
+                logPardon(action);
                 return action;
             }
         });
@@ -104,12 +113,12 @@ public class PunishmentManager extends Manager {
     }
 
     @SuppressWarnings("unchecked")
-    public List<ModAction> listWarnsMutes(CachedUser user) {
+    public List<ModAction> listMutesBans(CachedUser user) {
         return (List<ModAction>) parent.using(session -> {
             return session.createQuery("from ModAction where performedOn = :user and pardoned = false and (type = :a or type = :b)")
                     .setParameter("user", user)
-                    .setParameter("a", Punishment.WARN)
-                    .setParameter("b", Punishment.MUTE)
+                    .setParameter("a", Punishment.MUTE)
+                    .setParameter("b", Punishment.ROLE_BAN)
                     .getResultList();
         });
     }
@@ -193,6 +202,14 @@ public class PunishmentManager extends Manager {
                     .distinct()
                     .forEach(type -> parent.getHome().addRoleToMember(member, getRole((Punishment) type)).queue());
         });
+    }
+
+    public void logPunishment(ModAction action) {
+        getModLogChannel().sendMessageEmbeds(EmbedUtil.logPunishment(action).build()).queue();
+    }
+
+    public void logPardon(ModAction action) {
+        getModLogChannel().sendMessageEmbeds(EmbedUtil.logPardon(action).build()).queue();
     }
 
 }

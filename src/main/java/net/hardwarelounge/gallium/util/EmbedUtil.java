@@ -18,7 +18,7 @@ public class EmbedUtil {
 
     public static EmbedBuilder defaultEmbed() {
         return new EmbedBuilder()
-                .setColor(Color.GREEN)
+                .setColor(DiscordRoleColors.BLUE.getPrimary())
                 .setTimestamp(Instant.now())
                 .setFooter("HLGuard by HardwareLounge.de");
     }
@@ -72,6 +72,31 @@ public class EmbedUtil {
                 .addField("Grund", action.getPerformedBecause(), false)
                 .addField("Erstellungszeitpunkt", String.valueOf(action.getPerformedAt()), true)
                 .addField("Ist Aufgehoben?", String.valueOf(action.isPardoned()), true)
+                .addField("Aufgh. von", String.valueOf(action.getPardonedBy()), true)
+                .addField("Aufhebegrund", String.valueOf(action.getPardonedBecause()), true)
+                .addField("Aufhebezeitpunkt", String.valueOf(action.getPardonedAt()), true);
+    }
+
+    public static EmbedBuilder logPunishment(ModAction action) {
+        return defaultEmbed()
+                .setTitle("Neue Bestrafung #" + action.getId())
+                .setColor(DiscordRoleColors.RED.getPrimary())
+                .addField("Art", "`" + action.getType().name() + "`", true)
+                .addField("Dauer", Duration.ofMillis(action.getDuration()).toString(), true)
+                .addField("Moderator", action.getPerformedBy().toString(), false)
+                .addField("Bestrafter", action.getPerformedOn().toString(), false)
+                .addField("Grund", action.getPerformedBecause(), false)
+                .addField("Erstellungszeitpunkt", String.valueOf(action.getPerformedAt()), true);
+    }
+
+    public static EmbedBuilder logPardon(ModAction action) {
+        return defaultEmbed()
+                .setTitle("Bestrafung aufgehoben #" + action.getId())
+                .setColor(DiscordRoleColors.GREEN.getPrimary())
+                .addField("Art", "`" + action.getType().name() + "`", true)
+                .addField("Dauer", Duration.ofMillis(action.getDuration()).toString(), true)
+                .addField("Bestrafter", action.getPerformedOn().toString(), false)
+                .addField("Grund", action.getPerformedBecause(), false)
                 .addField("Aufgh. von", String.valueOf(action.getPardonedBy()), true)
                 .addField("Aufhebegrund", String.valueOf(action.getPardonedBecause()), true)
                 .addField("Aufhebezeitpunkt", String.valueOf(action.getPardonedAt()), true);
