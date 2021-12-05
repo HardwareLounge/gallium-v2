@@ -1,11 +1,11 @@
 package net.hardwarelounge.gallium.config;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 public class GalliumConfig extends DefaultConfigFactory {
 
@@ -27,8 +27,20 @@ public class GalliumConfig extends DefaultConfigFactory {
     private Boolean databaseUseSSL;
 
     public static GalliumConfig createDefault() {
-        GalliumConfig config = new GalliumConfig();
-        config.setDatabaseUseSSL(true);
-        return config;
+        return GalliumConfig.builder()
+                .token("Your Token Here")
+                .homeGuildId("-1")
+                .modLogChannelId("-1")
+                .ticketCategoryId("-1")
+                .ticketChannelId("-1")
+                .ticketLogChannelId("-1")
+                .maxTicketsPerUser(3)
+                .database("gallium_v2")
+                .databaseHost("mysql")
+                .databasePort("3306")
+                .databaseUsername("root")
+                .databasePassword("root")
+                .databaseUseSSL(true)
+                .build();
     }
 }

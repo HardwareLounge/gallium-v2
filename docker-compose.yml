@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: "mysql:8"
+    restart: always
+    volumes:
+      - type: volume
+        source: mysql_data
+        target: /var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: "gallium_v2"
+    networks:
+      default:
+        aliases: [ "mysql" ]
+
+  gallium:
+    image: gallium:${CUSTOM_TAG:-latest}
+    restart: always
+    volumes:
+      - type: volume
+        source: gallium_data
+        target: /data
+    networks:
+      default:
+        aliases: [ "gallium" ]
+
+volumes:
+  mysql_data: {}
+  gallium_data: {}
+
+networks:
+  default: {}

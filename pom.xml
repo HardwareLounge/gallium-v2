@@ -154,7 +154,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
-                    <finalName>gallium</finalName>
+                    <finalName>build</finalName>
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
