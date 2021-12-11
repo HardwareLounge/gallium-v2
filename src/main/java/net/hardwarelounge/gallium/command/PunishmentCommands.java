@@ -146,7 +146,10 @@ public class PunishmentCommands {
             for (Map.Entry<String, RoleSubconfig> entry : config.getRoles().entrySet()) { // and for each role in config
                 if (role.getId().equals(entry.getValue().getDiscordRoleId()) // check if user role matches config role
                         && limit.getLimit().containsKey(entry.getKey())) { // and check if limit exists
-                    maximumDuration = limit.getLimit().get(entry.getKey());
+                    long nextLimit = limit.getLimit().get(entry.getKey());
+                    if (nextLimit > maximumDuration) {
+                        maximumDuration = nextLimit;
+                    }
                 }
             }
         }
