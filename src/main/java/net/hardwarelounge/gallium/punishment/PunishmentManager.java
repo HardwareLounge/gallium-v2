@@ -10,6 +10,7 @@ import net.hardwarelounge.gallium.database.CachedUser;
 import net.hardwarelounge.gallium.database.ModAction;
 import net.hardwarelounge.gallium.util.EmbedUtil;
 import net.hardwarelounge.gallium.util.Manager;
+import org.hibernate.Session;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
@@ -72,11 +73,7 @@ public class PunishmentManager extends Manager {
         parent.using(session -> {
             parent.getLogger().info("Pardoning all mutes and bans from {}", target);
             for (ModAction modAction : modActions) {
-                modAction.setPardonedAt(Date.from(Instant.now()));
-                modAction.setPardonedBy(moderator);
-                modAction.setPardonedBecause(cause);
-                session.saveOrUpdate(modAction);
-                logPardon(modAction);
+                updatePardonedAction(moderator, cause, session, modAction);
             }
         });
     }
@@ -93,14 +90,25 @@ public class PunishmentManager extends Manager {
                 return null;
             } else {
                 ModAction action = optionalAction.get();
-                action.setPardonedAt(Date.from(Instant.now()));
-                action.setPardonedBy(moderator);
-                action.setPardonedBecause(cause);
-                session.saveOrUpdate(action);
-                logPardon(action);
+                updatePardonedAction(moderator, cause, session, action);
+
                 return action;
             }
         });
+    }
+
+    private void updatePardonedAction(CachedUser moderator, String cause, Session session, ModAction modAction) {
+        modAction.setPardoned(true);
+        modAction.setPardonedAt(Date.from(Instant.now()));
+        modAction.setPardonedBy(moderator);
+        modAction.setPardonedBecause(cause);
+        session.saveOrUpdate(modAction);
+
+        session.getTransaction().commit(); // push everything to db
+        session.beginTransaction();
+
+        tryRemovePunishmentRole(modAction.getPerformedOn(), modAction.getType());
+        logPardon(modAction);
     }
 
     @SuppressWarnings("unchecked")
