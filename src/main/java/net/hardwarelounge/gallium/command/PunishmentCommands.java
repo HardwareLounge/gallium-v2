@@ -1,10 +1,12 @@
 package net.hardwarelounge.gallium.command;
 
 import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.hardwarelounge.gallium.DiscordBot;
@@ -25,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+@Log4j2
 public class PunishmentCommands {
 
     private static final Pattern DURATION_FORMAT_PATTERN = Pattern.compile("\\d+[smhdMy]");
@@ -128,9 +131,13 @@ public class PunishmentCommands {
                 .build()
         ).setEphemeral(true).queue();
 
-        // notify the user
-        targetMember.getUser().openPrivateChannel().queue(privateChannel -> privateChannel
-                .sendMessageEmbeds(EmbedUtil.punishmentUserNotification(result).build()).queue());
+        try {
+            // notify the user
+            targetMember.getUser().openPrivateChannel().queue(privateChannel -> privateChannel
+                    .sendMessageEmbeds(EmbedUtil.punishmentUserNotification(result).build()).queue());
+        } catch (ErrorResponseException exception) {
+            log.info("Could not message user " + targetMember);
+        }
     }
 
     private static boolean checkLimit(PermissionConfig config, Punishment type, Member member, long duration) {

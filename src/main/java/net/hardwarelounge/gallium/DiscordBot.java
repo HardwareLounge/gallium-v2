@@ -11,9 +11,11 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.hardwarelounge.gallium.config.GalliumConfig;
 import net.hardwarelounge.gallium.config.PermissionConfig;
+import net.hardwarelounge.gallium.config.SecurityConfig;
 import net.hardwarelounge.gallium.database.DatabaseManager;
 import net.hardwarelounge.gallium.listener.SlashCommandListener;
 import net.hardwarelounge.gallium.punishment.PunishmentManager;
+import net.hardwarelounge.gallium.security.SecurityListener;
 import net.hardwarelounge.gallium.ticket.TicketManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,20 +32,23 @@ public class DiscordBot {
 
     private final @Getter GalliumConfig config;
     private final @Getter PermissionConfig permissionConfig;
+    private final @Getter SecurityConfig securityConfig;
     private final GalliumScheduledTasks galliumScheduledTasks;
 
     private @Getter JDA jda;
     private @Getter Guild home;
 
     private @Getter SlashCommandListener slashCommandListener;
+    private @Getter SecurityListener securityListener;
 
     private @Getter DatabaseManager databaseManager;
     private @Getter TicketManager ticketManager;
     private @Getter PunishmentManager punishmentManager;
 
-    public DiscordBot(GalliumConfig config, PermissionConfig permissionConfig) {
+    public DiscordBot(GalliumConfig config, PermissionConfig permissionConfig, SecurityConfig securityConfig) {
         this.config = config;
         this.permissionConfig = permissionConfig;
+        this.securityConfig = securityConfig;
         this.galliumScheduledTasks = new GalliumScheduledTasks(this);
     }
 
@@ -61,7 +66,8 @@ public class DiscordBot {
 
         initializeEventListeners();
         jda.addEventListener(
-                slashCommandListener
+                slashCommandListener,
+                securityListener
         );
 
         initializeManagers();
@@ -75,6 +81,7 @@ public class DiscordBot {
 
     private void initializeEventListeners() {
         slashCommandListener = new SlashCommandListener(this);
+        securityListener = new SecurityListener(this);
     }
 
     private void initializeManagers() {

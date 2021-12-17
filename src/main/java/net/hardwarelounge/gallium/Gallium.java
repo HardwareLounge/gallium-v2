@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import net.hardwarelounge.gallium.config.DefaultConfigFactory;
 import net.hardwarelounge.gallium.config.GalliumConfig;
 import net.hardwarelounge.gallium.config.PermissionConfig;
+import net.hardwarelounge.gallium.config.SecurityConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,6 +24,7 @@ public class Gallium {
 
         PermissionConfig permissions;
         GalliumConfig config;
+        SecurityConfig security;
 
         try {
             config = loadConfiguration(
@@ -34,6 +36,12 @@ public class Gallium {
             permissions = loadConfiguration(
                     new File("permissions.yml"),
                     PermissionConfig.class,
+                    new YAMLFactory()
+            );
+
+            security = loadConfiguration(
+                    new File("security.yml"),
+                    SecurityConfig.class,
                     new YAMLFactory()
             );
         } catch (ReflectiveOperationException exception) {
@@ -49,7 +57,7 @@ public class Gallium {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> logger.info("Shutting down Gallium...")));
 
         try {
-            new DiscordBot(config, permissions).start();
+            new DiscordBot(config, permissions, security).start();
         } catch (RuntimeException exception) {
             logger.error("Error while initializing bot", exception);
             System.exit(13);
