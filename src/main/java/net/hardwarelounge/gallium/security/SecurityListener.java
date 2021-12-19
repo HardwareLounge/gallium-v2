@@ -2,6 +2,7 @@ package net.hardwarelounge.gallium.security;
 
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
+import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
@@ -110,9 +111,21 @@ public class SecurityListener extends ListenerAdapter {
             deleteMessage = true;
 
             synchronized (spamHistory) {
-                int spamHits = blacklistHistory.getOrDefault(event.getAuthor().getIdLong(), 0);
-                blacklistHistory.put(event.getAuthor().getIdLong(), spamHits + 1);
+                int spamHits = spamHistory.getOrDefault(event.getAuthor().getIdLong(), 1);
+                spamHistory.put(event.getAuthor().getIdLong(), spamHits + 1);
 
+                event.getChannel().sendMessage(new MessageBuilder()
+                        .setContent(event.getMessage().getAuthor().getAsMention())
+                        .setEmbeds(EmbedUtil.defaultEmbed()
+                                .setTitle("Zu viele Treffer!")
+                                .setDescription(String.format(
+                                        "Halte die Anzahl folgender Wörter unter %s: `%s`. Bitte warte fünf Minuten "
+                                                + "bevor du erneut versuchst Nachrichten mit diesen Wörtern zu versenden.",
+                                        parent.getSecurityConfig().getSpamWordCountAutoMod(),
+                                        spamMatches.stream().map(Emit::getKeyword)
+                                                .collect(Collectors.joining("`, `"))
+                                )).build())
+                        .build()).queue();
                 if (spamHits >= 2) {
                     autoRoleBan(event.getMember(), "Spam Protection");
                 }

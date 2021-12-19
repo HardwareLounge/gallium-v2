@@ -4,3 +4,4 @@ target/
 
 config.yml
 permissions.yml
+security.yml

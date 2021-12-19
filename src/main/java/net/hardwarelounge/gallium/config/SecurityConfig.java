@@ -24,8 +24,8 @@ public class SecurityConfig extends DefaultConfigFactory {
                 .minAccountAgeSeconds(Duration.ofDays(2).toSeconds())
                 .spamWordCountAutoMod(3)
                 .blacklistRepeatAutoLimit(3)
-                .blacklistedPhrases(new HashSet<>())
-                .blacklistedPhrases(new HashSet<>())
+                .blacklistedPhrases(Set.of("aföjdasfklghfadlghfslödk"))
+                .blacklistedPhrases(Set.of("aföjdasfklghfadlghfslödk"))
                 .build();
     }
 }
