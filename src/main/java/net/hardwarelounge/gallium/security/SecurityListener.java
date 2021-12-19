@@ -5,6 +5,7 @@ import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.PrivateChannel;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
@@ -21,7 +22,10 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -153,27 +157,46 @@ public class SecurityListener extends ListenerAdapter {
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
         if (event.getUser().getTimeCreated().isAfter(OffsetDateTime.now()
                 .minus(parent.getSecurityConfig().getMinAccountAgeSeconds(), ChronoUnit.SECONDS))) {
+
+            String timeRemaining = humanReadableFormat(Duration.ofSeconds(ChronoUnit.SECONDS.between(
+                    OffsetDateTime.now(),
+                    event.getUser().getTimeCreated().plus(Duration.ofSeconds(parent
+                            .getSecurityConfig().getMinAccountAgeSeconds()))
+            )));
+
             try {
-                event.getUser().openPrivateChannel().queue(privateChannel -> privateChannel
-                        .sendMessage("Dein Account ist weniger als `"
-                                + humanReadableFormat(Duration.ofSeconds(
-                                parent.getSecurityConfig().getMinAccountAgeSeconds()))
-                                + "` alt. Bitte habe noch etwas Geduld, diese Maßnahme wird aufgrund der vielen"
-                                + " Spam Attacken auf Discord durchgesetzt.")
-                        .queue());
+                event.getUser().openPrivateChannel().queue(
+                        channel -> joinDMCreateSuccess(channel, timeRemaining, event),
+                        throwable -> joinDMCreateFailure(throwable, timeRemaining, event)
+                );
             } catch (ErrorResponseException exception) {
                 log.info("Could not message user " + event.getUser() + ", their DMs are closed");
             }
-
-            log.info("Kicking user " + event.getUser() + " because their account is too new");
-            event.getMember().kick("Account zu neu, versuche es in " + humanReadableFormat(
-                    Duration.ofSeconds(ChronoUnit.SECONDS.between(
-                                event.getUser().getTimeCreated().plus(Duration.ofSeconds(parent
-                                        .getSecurityConfig().getMinAccountAgeSeconds())),
-                                OffsetDateTime.now()
-                    ))
-            ) + " erneut.").queue();
         }
+    }
+
+    private void joinDMCreateSuccess(PrivateChannel privateChannel, String timeRemaining,
+                                     GuildMemberJoinEvent event) {
+        privateChannel.sendMessage(String.format("""
+                Dein Account ist weniger als `%s` alt. Bitte habe noch etwas Geduld,
+                diese Maßnahme wird aufgrund der vielen Spam Attacken auf Discord durchgesetzt.
+                Freischaltung erfolgt in: %s""",
+                humanReadableFormat(Duration.ofSeconds(parent.getSecurityConfig().getMinAccountAgeSeconds())),
+                timeRemaining
+        )).queue();
+
+        kickNewUser(event, timeRemaining);
+    }
+
+    private void joinDMCreateFailure(Throwable throwable, String timeRemaining,
+                                     GuildMemberJoinEvent event) {
+        log.debug("Could not open private channel... trying to kick user", throwable);
+        kickNewUser(event, timeRemaining);
+    }
+
+    private void kickNewUser(GuildMemberJoinEvent event, String timeRemaining) {
+        log.info("Kicking user " + event.getUser() + " because their account is too new");
+        event.getMember().kick("Account zu neu, versuche es in " + timeRemaining + " erneut.").queue();
     }
 
     private static String humanReadableFormat(Duration duration) {
