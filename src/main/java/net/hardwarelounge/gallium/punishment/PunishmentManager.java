@@ -1,6 +1,7 @@
 package net.hardwarelounge.gallium.punishment;
 
 import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Log4j2
 public class PunishmentManager extends Manager {
 
     private final Map<Punishment, Role> punishmentRoleMap;
@@ -53,6 +55,7 @@ public class PunishmentManager extends Manager {
 
     public ModAction punish(CachedUser target, CachedUser moderator,
                             Punishment type, long duration, String cause) {
+        log.info("Punishing user " + target + " with " + type.name() + " for " + duration + "s");
         return parent.using(session -> {
             ModAction action = new ModAction();
             action.setPerformedOn(target);

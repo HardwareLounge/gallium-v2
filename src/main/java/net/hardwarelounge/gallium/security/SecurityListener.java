@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.hardwarelounge.gallium.DiscordBot;
+import net.hardwarelounge.gallium.database.ModAction;
 import net.hardwarelounge.gallium.punishment.Punishment;
 import net.hardwarelounge.gallium.util.DiscordRoleColors;
 import net.hardwarelounge.gallium.util.EmbedUtil;
@@ -65,13 +66,24 @@ public class SecurityListener extends ListenerAdapter {
     }
 
     private void autoRoleBan(Member member, String cause) {
-        parent.getPunishmentManager().punish(
+        ModAction result = parent.getPunishmentManager().punish(
                 parent.getPunishmentManager().updateAndGetMember(member),
                 parent.getPunishmentManager().updateAndGetMember(parent.getJda().getSelfUser()),
                 Punishment.ROLE_BAN,
                 3600 * 24 * 14,
                 cause
         );
+
+        // add role
+        member.getGuild().addRoleToMember(member, parent.getPunishmentManager().getRole(Punishment.ROLE_BAN)).queue();
+
+        try {
+            // notify the user
+            member.getUser().openPrivateChannel().queue(privateChannel -> privateChannel
+                    .sendMessageEmbeds(EmbedUtil.punishmentUserNotification(result).build()).queue());
+        } catch (ErrorResponseException exception) {
+            log.info("Could not message user " + member);
+        }
     }
 
     @Override
@@ -89,6 +101,7 @@ public class SecurityListener extends ListenerAdapter {
 
         if (blacklistMatches.size() > 0) {
             deleteMessage = true;
+            log.info(event.getAuthor() + " sent blacklisted words!");
 
             parent.getPunishmentManager().getModLogChannel().sendMessageEmbeds(EmbedUtil.defaultEmbed()
                     .setTitle("BLACKLIST MATCH").setColor(DiscordRoleColors.RED.getSecondary())
@@ -109,6 +122,7 @@ public class SecurityListener extends ListenerAdapter {
 
         if (spamMatches.size() >= parent.getSecurityConfig().getSpamWordCountAutoMod()) {
             deleteMessage = true;
+            log.info(event.getAuthor() + " triggered spam detection!");
 
             synchronized (spamHistory) {
                 int spamHits = spamHistory.getOrDefault(event.getAuthor().getIdLong(), 1);
@@ -137,7 +151,7 @@ public class SecurityListener extends ListenerAdapter {
 
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
-        if (event.getUser().getTimeCreated().isBefore(OffsetDateTime.now()
+        if (event.getUser().getTimeCreated().isAfter(OffsetDateTime.now()
                 .minus(parent.getSecurityConfig().getMinAccountAgeSeconds(), ChronoUnit.SECONDS))) {
             try {
                 event.getUser().openPrivateChannel().queue(privateChannel -> privateChannel
