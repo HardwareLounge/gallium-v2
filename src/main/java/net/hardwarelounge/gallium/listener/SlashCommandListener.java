@@ -51,7 +51,7 @@ public class SlashCommandListener extends ListenerAdapter {
         loadRoles();
 
         // Register all slash-commands
-        registerCommands(parent.getJda(),
+        registerCommands(
                 new InfoCommand(parent, "info"),
                 new TicketCommand(parent, "ticket"),
 
@@ -65,14 +65,14 @@ public class SlashCommandListener extends ListenerAdapter {
         );
     }
 
-    private void registerCommands(JDA jda, SlashCommand... commands) {
+    private void registerCommands(SlashCommand... commands) {
         // put all commands into the map
         for (SlashCommand command : commands) {
             commandMap.put(command.commandData().getName(), command);
         }
 
         // register global commands
-        jda.updateCommands().addCommands(
+        parent.getJda().updateCommands().addCommands(
                 commandMap.values().stream()
                         .filter(SlashCommand::isGlobal)
                         .map(SlashCommand::commandData)
@@ -80,7 +80,7 @@ public class SlashCommandListener extends ListenerAdapter {
         ).queue();
 
         // register all guild commands
-        for (Guild guild : jda.getGuilds()) {
+        for (Guild guild : parent.getJda().getGuilds()) {
             guild.updateCommands().addCommands(
                     commandMap.values().stream()
                             .filter(command -> !command.isGlobal())
@@ -134,7 +134,8 @@ public class SlashCommandListener extends ListenerAdapter {
                     event.getHook().sendMessage(exception.getMessage().length() == 0 ?
                             exception.getClass().getSimpleName() : exception.getMessage()).setEphemeral(true).queue();
                 } else {
-                    event.reply(exception.getMessage()).setEphemeral(true).queue();
+                    event.reply(exception.getMessage().length() == 0 ?
+                            exception.getClass().getSimpleName() : exception.getMessage()).setEphemeral(true).queue();
                 }
 
                 if (exception instanceof NullPointerException) commandLogger.error("", exception);
