@@ -56,7 +56,7 @@ public class TicketManager extends Manager {
      */
     public TextChannel openTicket(CachedUser owner, TicketType type) {
         return parent.using(session -> {
-            int ticketCount = session.createQuery("from Ticket where owner.id = :id")
+            int ticketCount = session.createQuery("from Ticket where owner.id = :id and open = true")
                     .setParameter("id", owner.getId()).getResultList().size();
 
             if (ticketCount >= parent.getConfig().getMaxTicketsPerUser()) {
