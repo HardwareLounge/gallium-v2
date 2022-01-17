@@ -21,6 +21,12 @@ public class Gallium {
 
     public static void main(String[] args) throws Exception {
         logger = LogManager.getLogger("Gallium");
+        
+        final int cores = Runtime.getRuntime().availableProcessors();
+        if (cores <= 1) {
+            logger.warn("Available Cores \"" + cores + "\", setting Parallelism Flag");
+            System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "1");
+        }
 
         PermissionConfig permissions;
         GalliumConfig config;
