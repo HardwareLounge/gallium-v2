@@ -131,14 +131,22 @@ public class SlashCommandListener extends ListenerAdapter {
             } catch (NullPointerException | CommandFailedException exception) {
                 // notify user about failure
                 if (event.isAcknowledged()) {
-                    event.getHook().sendMessage(exception.getMessage().length() == 0 ?
-                            exception.getClass().getSimpleName() : exception.getMessage()).setEphemeral(true).queue();
+                    if (exception.getMessage() == null || exception.getMessage().isBlank()) {
+                        commandLogger.error("Message was blank!", exception);
+                        event.getHook().sendMessage(exception.getClass().getSimpleName()).setEphemeral(true).queue();
+                    } else {
+                        if (exception instanceof NullPointerException) commandLogger.error("npe", exception);
+                        event.getHook().sendMessage(exception.getMessage()).setEphemeral(true).queue();
+                    }
                 } else {
-                    event.reply(exception.getMessage().length() == 0 ?
-                            exception.getClass().getSimpleName() : exception.getMessage()).setEphemeral(true).queue();
+                    if (exception.getMessage() == null || exception.getMessage().isBlank()) {
+                        commandLogger.error("Message was blank!", exception);
+                        event.reply(exception.getClass().getSimpleName()).setEphemeral(true).queue();
+                    } else {
+                        if (exception instanceof NullPointerException) commandLogger.error("npe", exception);
+                        event.reply(exception.getMessage()).setEphemeral(true).queue();
+                    }
                 }
-
-                if (exception instanceof NullPointerException) commandLogger.error("", exception);
             }
         } else {
             event.reply("Fehler: der Befehl konnte nicht gefunden werden!").setEphemeral(true).queue();
