@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -181,6 +182,13 @@ public class TicketCommand extends SlashCommand {
             throw new CommandFailedException("Failed to serialize ticket object");
         }
 
-        Objects.requireNonNull(parent.getHome().getTextChannelById(ticket.getDiscordChannelId())).delete().queue();
+        TextChannel ticketTextChannel = parent.getHome().getTextChannelById(ticket.getDiscordChannelId());
+
+        if (ticketTextChannel == null) {
+            throw new NullPointerException("Text channel " + ticket.getDiscordChannelId() + " could not be found!");
+        } else {
+            ticketTextChannel.delete()
+                    .queue();
+        }
     }
 }
